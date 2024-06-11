@@ -1,20 +1,23 @@
-import uuid
 from flask import Flask, request, jsonify
+from decouple import config
 import boto3
+import uuid
 import io
 from PIL import Image
 
 app = Flask(__name__)
 
-BUCKET_NAME = 'aeadae9a-9e785156-fb10-444c-b5e2-1aed9a8f54d3' 
+BUCKET_NAME = config('BUCKET_NAME')
+AWS_ACCESS_KEY_ID = config('aws_access_key_id')
+AWS_SECRET_ACCESS_KEY = config('aws_secret_access_key')
 
 # Инициализация клиента для S3
 s3 = boto3.client(
     's3',
     endpoint_url='https://s3.timeweb.cloud',
     region_name='ru-1',
-    aws_access_key_id='IQZ7JCZ37BDUBKE7CHEZ', 
-    aws_secret_access_key='vjBcc0SeNFxqWDDXQiIV0slcFKjPwf5CdZgkd6QS', 
+    aws_access_key_id=AWS_ACCESS_KEY_ID, 
+    aws_secret_access_key=AWS_SECRET_ACCESS_KEY, 
 )
 
 @app.route('/upload', methods=['POST'])
@@ -28,7 +31,7 @@ def upload_image():
             image = Image.open(io.BytesIO(image_file.read()))
             
             # Генерация уникального имени файла
-            file_key = str(uuid.uuid4()) + '.jpg'
+            file_key = 'fruc/' + str(uuid.uuid4()) + '.jpg'  # Добавление префикса fruc/
             
             # Сохранение изображения в S3
             image_stream = io.BytesIO()
@@ -37,7 +40,6 @@ def upload_image():
             s3.upload_fileobj(image_stream, BUCKET_NAME, file_key)
             
             # Формирование ссылки на загруженное изображение
-            
             image_url = f"https://s3.timeweb.cloud/{BUCKET_NAME}/{file_key}"
             
             # Возвращаем ссылку в виде JSON
@@ -49,4 +51,3 @@ def upload_image():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
-
